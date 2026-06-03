@@ -1,8 +1,9 @@
-# CubeRoll
+# CubeRol
 
-твоя задача зробити цю механіку
-
-
+git commit -m "Update README"
+git commit -m "Update README"
+git commit -m "Update README"
+git commit -m "Update README"
 
 CubeRoll is a GameStudio puzzle game for the final KP submission. The player rolls a cube on a board, uses one-time painter tiles, opens matching color gates and reaches the finish tile.
 
