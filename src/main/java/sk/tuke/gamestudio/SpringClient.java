@@ -1,5 +1,5 @@
 package sk.tuke.gamestudio;
-//mll
+//mllasds
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
