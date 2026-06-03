@@ -1,5 +1,9 @@
 # CubeRoll
 
+твоя задача зробити цю механіку
+
+
+
 CubeRoll is a GameStudio puzzle game for the final KP submission. The player rolls a cube on a board, uses one-time painter tiles, opens matching color gates and reaches the finish tile.
 
 ## Final submission 3 status
