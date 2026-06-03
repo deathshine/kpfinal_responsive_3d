@@ -1,7 +1,16 @@
 # CubeRol
-123123test
-Скушка - 
-тест
+завдання зробити нову механіку а саме
+dada
+da
+da
+sd
+ad
+a
+das
+d
+sad
+as
+d
 CubeRoll is a GameStudio puzzle game for the final KP submission. The player rolls a cube on a board, uses one-time painter tiles, opens matching color gates and reaches the finish tile.
 
 ## Final submission 3 status
