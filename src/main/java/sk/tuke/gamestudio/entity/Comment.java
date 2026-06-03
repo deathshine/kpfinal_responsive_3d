@@ -1,5 +1,4 @@
 package sk.tuke.gamestudio.entity;
-// зроби це git commit -m "Update README"
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
