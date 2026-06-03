@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CubeRoll Web</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23020817'/%3E%3Cpath d='M16 22h28l5 6v22H21l-5-6z' fill='%2338bdf8'/%3E%3Cpath d='M16 22l12-8h28l-12 8z' fill='%2386efac'/%3E%3Cpath d='M44 22l12-8v22l-7 14V28z' fill='%23c084fc'/%3E%3C/svg%3E">
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body>
+<div class="page">
+    <header class="hero">
+        <div>
+            <p class="eyebrow">GameStudio final web GUI</p>
+            <h1>CubeRoll</h1>
+            <p class="hero-text">Roll the cube through painters and gates, finish the level, and use score, comments and rating services from the browser.</p>
+        </div>
+
+        <div class="login-box" th:if="${!gameSession.loggedIn}">
+            <h2>Login</h2>
+            <form method="post" th:action="@{/cuberoll/login}" class="stacked-form">
+                <input type="text" name="player" placeholder="2-20 chars: letters, digits, _, -" minlength="2" maxlength="20" pattern="[A-Za-z0-9_-]{2,20}" required>
+                <button type="submit">Login</button>
+            </form>
+            <p class="muted">Without login you can view top scores, comments and average rating only.</p>
+        </div>
+
+        <div class="login-box" th:if="${gameSession.loggedIn}">
+            <span class="muted">Logged in as</span>
+            <strong class="player-name" th:text="${gameSession.playerName}"></strong>
+            <form method="post" th:action="@{/cuberoll/logout}">
+                <button type="submit" class="ghost">Logout</button>
+            </form>
+        </div>
+    </header>
+
+    <main class="content">
+        <section class="game-panel">
+            <div class="toolbar">
+                <form method="post" th:action="@{/cuberoll/level}" class="inline-form">
+                    <select name="level" aria-label="Select level">
+                        <option th:each="level : ${levels}"
+                                th:value="${level.index}"
+                                th:selected="${level.index == gameSession.levelIndex}"
+                                th:text="|Level ${level.number} — ${level.name}|"></option>
+                    </select>
+                    <button type="submit">Load</button>
+                </form>
+                <form method="post" th:action="@{/cuberoll/reset}">
+                    <button type="submit" class="ghost">Restart level</button>
+                </form>
+                <form method="post" th:action="@{/cuberoll/next}" th:if="${field.state.name() == 'SOLVED' && !gameSession.lastLevel}">
+                    <button type="submit">Next level</button>
+                </form>
+                <a th:href="@{/cuberoll-playcanvas.html}" class="button-link playcanvas-link">Open 3D PlayCanvas</a>
+            </div>
+
+            <div class="status-grid">
+                <div><span>Level</span><strong th:text="${field.definition.name}"></strong></div>
+                <div><span>State</span><strong th:text="${field.state}"></strong></div>
+                <div><span>Moves</span><strong th:text="${field.moveCount}"></strong></div>
+                <div><span>Current score</span><strong th:text="${field.calculateScore()}"></strong></div>
+                <div><span>Remaining painters</span><strong th:text="${field.remainingPainters}"></strong></div>
+                <div><span>Bottom face</span><strong th:text="${field.cube.bottom.displayName}"></strong></div>
+                <div><span>Score saved</span><strong th:text="${gameSession.scoreSaved ? 'yes' : 'no'}"></strong></div>
+                <div><span>Player</span><strong th:text="${gameSession.loggedIn ? gameSession.playerName : 'anonymous'}"></strong></div>
+            </div>
+
+            <div class="cube-info">
+                <strong>Cube orientation:</strong>
+                <span th:text="${field.cube.orientationSummary}"></span>
+            </div>
+
+            <div class="board-wrapper">
+                <div class="board" aria-label="CubeRoll board">
+                    <div th:each="row : ${board}" class="board-row">
+                        <div th:each="cell : ${row}"
+                             th:class="${cell.cssClass}"
+                             th:title="${cell.title}"
+                             th:text="${cell.label}"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls" th:classappend="${field.state.name() != 'PLAYING'} ? ' disabled' : ''">
+                <div></div>
+                <form method="post" th:action="@{/cuberoll/move}" data-direction-form="NORTH">
+                    <input type="hidden" name="direction" value="NORTH">
+                    <button type="submit" th:disabled="${field.state.name() != 'PLAYING'}" aria-label="Move north">↑</button>
+                </form>
+                <div></div>
+                <form method="post" th:action="@{/cuberoll/move}" data-direction-form="WEST">
+                    <input type="hidden" name="direction" value="WEST">
+                    <button type="submit" th:disabled="${field.state.name() != 'PLAYING'}" aria-label="Move west">←</button>
+                </form>
+                <form method="post" th:action="@{/cuberoll/move}" data-direction-form="SOUTH">
+                    <input type="hidden" name="direction" value="SOUTH">
+                    <button type="submit" th:disabled="${field.state.name() != 'PLAYING'}" aria-label="Move south">↓</button>
+                </form>
+                <form method="post" th:action="@{/cuberoll/move}" data-direction-form="EAST">
+                    <input type="hidden" name="direction" value="EAST">
+                    <button type="submit" th:disabled="${field.state.name() != 'PLAYING'}" aria-label="Move east">→</button>
+                </form>
+            </div>
+            <p class="keyboard-hint">Keyboard: W/A/S/D or arrow keys.</p>
+
+            <div class="message" th:text="${field.statusLine}"></div>
+            <div class="message success" th:if="${field.state.name() == 'SOLVED' && gameSession.scoreSaved}">
+                Level solved. Score <strong th:text="${gameSession.lastSavedScore}"></strong> was saved for
+                <strong th:text="${gameSession.lastScorePlayer}"></strong>.
+            </div>
+            <div class="message warning" th:if="${anonymousSolved}">
+                Level solved in anonymous mode. Login, restart the level and solve it again to save a score.
+            </div>
+            <div class="message fail" th:if="${field.state.name() == 'FAILED'}">The cube fell or entered a wrong gate. Restart the level and try another route.</div>
+
+            <div class="legend">
+                <div><span class="legend-swatch floor"></span> floor</div>
+                <div><span class="legend-swatch void"></span> void</div>
+                <div><span class="legend-swatch finish"></span> finish</div>
+                <div><span class="legend-swatch painter red"></span> painter</div>
+                <div><span class="legend-swatch gate red"></span> gate</div>
+            </div>
+        </section>
+
+        <aside class="sidebar">
+            <section class="card">
+                <h3>Rating</h3>
+                <p class="metric" th:text="|Average: ${averageRating} / 5|"></p>
+                <p th:if="${gameSession.loggedIn && playerRating == 0}">Your rating: not set yet</p>
+                <p th:if="${gameSession.loggedIn && playerRating != 0}" th:text="|Your rating: ${playerRating} / 5|"></p>
+                <form method="post" th:action="@{/cuberoll/rating}" th:if="${gameSession.loggedIn}" class="inline-form">
+                    <select name="value" aria-label="Rating value">
+                        <option th:each="value : ${ratingValues}"
+                                th:value="${value}"
+                                th:selected="${value == playerRating}"
+                                th:text="|${value} ★|"></option>
+                    </select>
+                    <button type="submit">Save rating</button>
+                </form>
+                <p th:if="${!gameSession.loggedIn}" class="muted">Login to add or update your rating.</p>
+            </section>
+
+            <section class="card">
+                <h3>Top scores</h3>
+                <p class="muted" th:if="${#lists.isEmpty(topScores)}">No scores yet.</p>
+                <table th:if="${!#lists.isEmpty(topScores)}" class="score-table">
+                    <thead>
+                    <tr><th>#</th><th>Player</th><th>Points</th><th>Date</th></tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="score, iter : ${topScores}">
+                        <td th:text="${iter.count}"></td>
+                        <td th:text="${score.player}"></td>
+                        <td th:text="${score.points}"></td>
+                        <td th:text="${#dates.format(score.playedOn, 'dd.MM.yyyy HH:mm')}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="card">
+                <h3>Comments</h3>
+                <form method="post" th:action="@{/cuberoll/comment}" th:if="${gameSession.loggedIn}" class="stacked-form">
+                    <textarea name="comment" rows="3" maxlength="300" placeholder="Write a short comment..." required></textarea>
+                    <button type="submit">Add comment</button>
+                </form>
+                <p th:if="${!gameSession.loggedIn}" class="muted">Login to add a comment. Existing comments are visible to everyone.</p>
+                <p class="muted" th:if="${#lists.isEmpty(comments)}">No comments yet.</p>
+                <div class="comment" th:each="comment : ${comments}">
+                    <div class="comment-head">
+                        <strong th:text="${comment.player}"></strong>
+                        <span th:text="${#dates.format(comment.commentedOn, 'dd.MM.yyyy HH:mm')}"></span>
+                    </div>
+                    <p th:text="${comment.comment}"></p>
+                </div>
+            </section>
+        </aside>
+    </main>
+</div>
+
+<script>
+    document.addEventListener('keydown', function (event) {
+        const directionByKey = {
+            ArrowUp: 'NORTH', w: 'NORTH', W: 'NORTH',
+            ArrowDown: 'SOUTH', s: 'SOUTH', S: 'SOUTH',
+            ArrowLeft: 'WEST', a: 'WEST', A: 'WEST',
+            ArrowRight: 'EAST', d: 'EAST', D: 'EAST'
+        };
+        const direction = directionByKey[event.key];
+        if (!direction || event.target.matches('input, textarea, select')) {
+            return;
+        }
+        const form = document.querySelector('[data-direction-form="' + direction + '"]');
+        const button = form ? form.querySelector('button') : null;
+        if (form && button && !button.disabled) {
+            event.preventDefault();
+            form.submit();
+        }
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>CubeRoll 3D PlayCanvas Demo</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23020817'/%3E%3Cpath d='M16 22h28l5 6v22H21l-5-6z' fill='%2338bdf8'/%3E%3Cpath d='M16 22l12-8h28l-12 8z' fill='%2386efac'/%3E%3Cpath d='M44 22l12-8v22l-7 14V28z' fill='%23c084fc'/%3E%3C/svg%3E">
+    <link rel="stylesheet" href="/cuberoll-playcanvas.css">
+    <script type="importmap">
+        {
+            "imports": {
+                "playcanvas": "https://cdn.jsdelivr.net/npm/playcanvas@2.18.1/+esm"
+            }
+        }
+    </script>
+</head>
+<body>
+<div id="pc-shell" class="pc-shell">
+    <canvas id="application-canvas" aria-label="CubeRoll 3D scene" tabindex="0"></canvas>
+
+    <div class="scene-vignette" aria-hidden="true"></div>
+    <div class="status-orb" aria-hidden="true"></div>
+    <button id="hud-open-button" class="panel-open-button panel-open-left" type="button" hidden>☰ Game</button>
+    <button id="community-open-button" class="panel-open-button panel-open-right" type="button" hidden>★ Scores</button>
+
+    <section id="hud" class="hud" aria-label="CubeRoll status and controls">
+        <div class="hud-header">
+            <div>
+                <p class="eyebrow">Java rules · PlayCanvas Engine</p>
+                <h1>CubeRoll 3D</h1>
+                <p class="subtitle">A floating puzzle-board demo powered by the Spring API.</p>
+            </div>
+            <div class="hud-actions">
+                <a class="classic-link" href="/cuberoll">Classic UI</a>
+                <button id="hud-close-button" class="panel-close-button" type="button" aria-label="Hide game panel" title="Hide game panel">×</button>
+            </div>
+        </div>
+
+        <div id="webgl-fallback" class="webgl-fallback" role="alert" hidden>
+            <strong>WebGL unavailable.</strong>
+            <span>This browser or device cannot start the 3D scene. The classic CubeRoll UI still works.</span>
+        </div>
+
+        <div class="hud-status">
+            <div><span>Level</span><strong id="hud-level">—</strong></div>
+            <div><span>Moves</span><strong id="hud-moves">—</strong></div>
+            <div><span>Score</span><strong id="hud-score">—</strong></div>
+            <div><span>Painters</span><strong id="hud-painters">—</strong></div>
+            <div><span>State</span><strong id="hud-state">—</strong></div>
+            <div><span>Player</span><strong id="hud-player">anonymous</strong></div>
+        </div>
+
+        <p id="hud-message" class="hud-message">Loading CubeRoll…</p>
+        <div id="busy-indicator" class="busy-indicator" hidden>Syncing with Java API…</div>
+
+        <div class="hud-controls">
+            <label for="level-select">Level</label>
+            <select id="level-select" aria-label="Select CubeRoll level"></select>
+            <button id="reset-button" class="secondary" type="button">Reset</button>
+            <button id="next-button" type="button">Next level</button>
+        </div>
+
+        <div class="move-pad" aria-label="Move cube controls">
+            <span></span>
+            <button type="button" data-direction="NORTH" aria-label="Move north">↑</button>
+            <span></span>
+            <button type="button" data-direction="WEST" aria-label="Move west">←</button>
+            <button type="button" data-direction="SOUTH" aria-label="Move south">↓</button>
+            <button type="button" data-direction="EAST" aria-label="Move east">→</button>
+        </div>
+
+        <p class="hint">Use arrow keys or W/A/S/D. Touch buttons work on mobile. Move legality, scoring, painters, gates, finish locks and score saving all come from Java.</p>
+
+        <div class="legend" aria-label="Cell legend">
+            <span><i class="floor"></i>Floor</span>
+            <span><i class="finish"></i>Finish</span>
+            <span><i class="painter"></i>Painter</span>
+            <span><i class="gate"></i>Gate</span>
+            <span><i class="void"></i>Void</span>
+        </div>
+    </section>
+
+    <aside id="community-panel" class="community-panel" aria-label="CubeRoll scores, rating and comments">
+        <div class="community-header">
+            <div>
+                <p class="eyebrow">GameStudio services</p>
+                <h2>Scores & feedback</h2>
+            </div>
+            <div class="community-actions">
+                <button id="community-refresh-button" class="secondary compact-button" type="button">Refresh</button>
+                <button id="community-close-button" class="panel-close-button" type="button" aria-label="Hide scores and feedback panel" title="Hide scores and feedback panel">×</button>
+            </div>
+        </div>
+        <p id="community-status" class="community-status" role="status" aria-live="polite"></p>
+
+        <section class="community-card auth-card" aria-label="Player login">
+            <h3>Player</h3>
+            <div id="community-logged-out">
+                <p class="community-muted">Login to save scores, add a rating and write comments in 3D mode.</p>
+                <form id="community-login-form" class="community-form">
+                    <label class="sr-only" for="community-login-player">Player name</label>
+                    <input id="community-login-player" name="player" type="text" placeholder="2-20 chars: letters, digits, _, -" minlength="2" maxlength="20" pattern="[A-Za-z0-9_-]{2,20}" autocomplete="username" required>
+                    <button type="submit">Login</button>
+                </form>
+            </div>
+            <div id="community-logged-in" hidden>
+                <span class="community-muted">Logged in as</span>
+                <strong id="community-player-name" class="community-player-name">anonymous</strong>
+                <form id="community-logout-form" class="community-form inline">
+                    <button type="submit" class="secondary">Logout</button>
+                </form>
+            </div>
+        </section>
+
+        <section class="community-card score-card" aria-label="Current score and saved score status">
+            <h3>Score</h3>
+            <p id="community-current-score" class="community-metric">Current score: —</p>
+            <p id="community-score-saved" class="community-muted">Loading score status…</p>
+        </section>
+
+        <section class="community-card rating-card" aria-label="Rating">
+            <h3>Rating</h3>
+            <p id="community-rating-average" class="community-metric">Average: — / 5</p>
+            <p id="community-player-rating" class="community-muted">Your rating: not set yet</p>
+            <form id="community-rating-form" class="community-form compact" hidden>
+                <label class="sr-only" for="community-rating-value">Rating value</label>
+                <select id="community-rating-value" name="value" aria-label="Rating value">
+                    <option value="1">1 ★</option>
+                    <option value="2">2 ★</option>
+                    <option value="3">3 ★</option>
+                    <option value="4">4 ★</option>
+                    <option value="5">5 ★</option>
+                </select>
+                <button type="submit">Save rating</button>
+            </form>
+            <p id="community-rating-login-hint" class="community-muted">Login to add or update your rating.</p>
+        </section>
+
+        <section class="community-card top-scores-card" aria-label="Top scores">
+            <h3>Top scores</h3>
+            <p id="community-score-empty" class="community-muted">No scores yet.</p>
+            <div class="community-table-wrap">
+                <table id="community-score-table" class="community-table" hidden>
+                    <thead>
+                    <tr><th>#</th><th>Player</th><th>Points</th><th>Date</th></tr>
+                    </thead>
+                    <tbody id="community-score-table-body"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="community-card comments-card" aria-label="Comments">
+            <h3>Comments</h3>
+            <form id="community-comment-form" class="community-form" hidden>
+                <label class="sr-only" for="community-comment-text">Comment</label>
+                <textarea id="community-comment-text" name="comment" rows="3" maxlength="300" placeholder="Write a short comment..." required></textarea>
+                <button type="submit">Add comment</button>
+            </form>
+            <p id="community-comment-login-hint" class="community-muted">Login to add a comment. Existing comments are visible to everyone.</p>
+            <p id="community-comments-empty" class="community-muted">No comments yet.</p>
+            <div id="community-comments-list" class="comments-list"></div>
+        </section>
+    </aside>
+
+    <div class="move-pad mobile-move-pad" aria-label="Mobile move cube controls">
+        <span></span>
+        <button type="button" data-direction="NORTH" aria-label="Move north">↑</button>
+        <span></span>
+        <button type="button" data-direction="WEST" aria-label="Move west">←</button>
+        <button type="button" data-direction="SOUTH" aria-label="Move south">↓</button>
+        <button type="button" data-direction="EAST" aria-label="Move east">→</button>
+    </div>
+
+    <noscript>
+        <div class="webgl-fallback noscript"><strong>JavaScript is required</strong><span>Use the classic CubeRoll UI at /cuberoll.</span></div>
+    </noscript>
+</div>
+<script>
+    (function () {
+        function showRendererFallback(message) {
+            var shell = document.getElementById('pc-shell');
+            if (shell) {
+                shell.classList.add('webgl-missing');
+            }
+
+            var canvas = document.getElementById('application-canvas');
+            if (canvas) {
+                canvas.hidden = true;
+            }
+
+            var fallback = document.getElementById('webgl-fallback');
+            if (fallback) {
+                fallback.hidden = false;
+                var detail = fallback.querySelector('span');
+                if (detail) {
+                    detail.textContent = message;
+                }
+            }
+
+            var busy = document.getElementById('busy-indicator');
+            if (busy) {
+                busy.hidden = true;
+            }
+        }
+
+        window.addEventListener('error', function (event) {
+            var target = event.target;
+            if (target && target.dataset && target.dataset.cuberollModule === 'playcanvas') {
+                showRendererFallback('The PlayCanvas renderer could not load. Check the network connection or open the classic CubeRoll page.');
+            }
+        }, true);
+    }());
+</script>
+<script>
+    (function () {
+        var shell = document.getElementById('pc-shell');
+        if (!shell) {
+            return;
+        }
+
+        var panels = {
+            hud: {
+                panel: document.getElementById('hud'),
+                close: document.getElementById('hud-close-button'),
+                open: document.getElementById('hud-open-button'),
+                className: 'hud-closed'
+            },
+            community: {
+                panel: document.getElementById('community-panel'),
+                close: document.getElementById('community-close-button'),
+                open: document.getElementById('community-open-button'),
+                className: 'community-closed'
+            }
+        };
+
+        var lastLayoutMode = '';
+        var userChangedPanels = false;
+
+        function emitPanelChange() {
+            window.dispatchEvent(new CustomEvent('cuberoll-panels-changed'));
+        }
+
+        function focusWithoutScroll(element) {
+            if (!element) {
+                return;
+            }
+            try {
+                element.focus({ preventScroll: true });
+            } catch (error) {
+                element.focus();
+            }
+        }
+
+        function setClosed(name, closed, focusTarget) {
+            var item = panels[name];
+            if (!item || !item.panel || !item.open) {
+                return;
+            }
+
+            item.panel.classList.toggle('is-panel-hidden', closed);
+            item.panel.toggleAttribute('aria-hidden', closed);
+            shell.classList.toggle(item.className, closed);
+            item.open.hidden = !closed;
+            item.open.setAttribute('aria-expanded', String(!closed));
+            if (item.close) {
+                item.close.setAttribute('aria-expanded', String(!closed));
+            }
+
+            if (focusTarget) {
+                focusWithoutScroll(closed ? item.open : item.close);
+            }
+        }
+
+        function layoutMode() {
+            var width = window.innerWidth || document.documentElement.clientWidth || 1024;
+            var height = window.innerHeight || document.documentElement.clientHeight || 768;
+            if (width <= 920) {
+                return 'mobile';
+            }
+            if (width <= 1450 || height <= 720) {
+                return 'notebook';
+            }
+            return 'desktop';
+        }
+
+        function applyResponsivePanelLayout(force) {
+            var mode = layoutMode();
+            if (mode !== lastLayoutMode) {
+                userChangedPanels = false;
+                lastLayoutMode = mode;
+            }
+            if (!force && userChangedPanels) {
+                emitPanelChange();
+                return;
+            }
+
+            if (mode === 'mobile') {
+                setClosed('hud', true, false);
+                setClosed('community', true, false);
+            } else if (mode === 'notebook') {
+                setClosed('hud', false, false);
+                setClosed('community', true, false);
+            } else {
+                setClosed('hud', false, false);
+                setClosed('community', false, false);
+            }
+            emitPanelChange();
+        }
+
+        Object.keys(panels).forEach(function (name) {
+            var item = panels[name];
+            if (!item || !item.close || !item.open) {
+                return;
+            }
+            item.close.addEventListener('click', function () {
+                userChangedPanels = true;
+                setClosed(name, true, true);
+                emitPanelChange();
+            });
+            item.open.addEventListener('click', function () {
+                userChangedPanels = true;
+                setClosed(name, false, true);
+                emitPanelChange();
+            });
+        });
+
+        applyResponsivePanelLayout(true);
+        window.addEventListener('resize', function () {
+            window.clearTimeout(window.__cuberollResponsivePanelsTimer);
+            window.__cuberollResponsivePanelsTimer = window.setTimeout(function () {
+                applyResponsivePanelLayout(false);
+            }, 120);
+        });
+        window.addEventListener('orientationchange', function () {
+            window.setTimeout(function () {
+                applyResponsivePanelLayout(true);
+            }, 160);
+        });
+    }());
+</script>
+<script type="module" src="/cuberoll-playcanvas.js" data-cuberoll-module="playcanvas"></script>
+</body>
+</html>

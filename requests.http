@@ -1,0 +1,44 @@
+### Score - add
+POST http://localhost:8081/api/score
+Content-Type: application/json
+
+{
+  "player": "demo",
+  "game": "cuberoll",
+  "points": 321,
+  "playedOn": "2026-03-31T12:00:00.000+00:00"
+}
+
+### Score - top
+GET http://localhost:8081/api/score/cuberoll
+
+### Comment - add
+POST http://localhost:8081/api/comment
+Content-Type: application/json
+
+{
+  "player": "demo",
+  "game": "cuberoll",
+  "comment": "REST works fine",
+  "commentedOn": "2026-03-31T12:05:00.000+00:00"
+}
+
+### Comment - list
+GET http://localhost:8081/api/comment/cuberoll
+
+### Rating - set
+POST http://localhost:8081/api/rating
+Content-Type: application/json
+
+{
+  "player": "demo",
+  "game": "cuberoll",
+  "rating": 5,
+  "ratedOn": "2026-03-31T12:10:00.000+00:00"
+}
+
+### Rating - average
+GET http://localhost:8081/api/rating/cuberoll
+
+### Rating - player value
+GET http://localhost:8081/api/rating/cuberoll/demo
