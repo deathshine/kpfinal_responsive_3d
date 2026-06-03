@@ -1,5 +1,5 @@
 package sk.tuke.gamestudio.entity;
-
+// zalupa ebana git commit -am "Your message"
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
